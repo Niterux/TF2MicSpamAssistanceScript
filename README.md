@@ -1,29 +1,31 @@
 # ChristmasMicScript
 ### Dependencies
 
-NodeJS
+- NodeJS
 
-npm rcon-srcds
+- npm rcon-srcds
 
-npm fast-xml-parser
+- npm fast-xml-parser
 
-npm html-entities
+- npm html-entities
 
-VLC Media Player
+- VLC Media Player
 
-Use VB-CABLE to pipe audio to TF2
+### Instruction
 
-Demo support must be enabled for all servers in TF2
+- Use VB-CABLE to pipe audio to TF2
 
-VLC must have its web interface enabled
+- Demo support must be enabled for all servers in TF2
 
-Please configure all paths and launch options in the script file
+- VLC must have its web interface enabled
 
-Please remove any TF2 mods you have that may overwrite con_logfile (Some huds may do this, mastercomfig does not do this)
+- Please configure all paths and launch options in the script file
 
-I have used Mp3tag to set artist and title metadata
+- Please remove any TF2 mods you have that may overwrite con_logfile (Some huds may do this, mastercomfig does not do this)
 
-### binds
+- I have used Mp3tag to set artist and title metadata
+
+### Binds
 - echo VLCPAUSE
 - echo VLCNEXT
 - echo VLCPLAY
