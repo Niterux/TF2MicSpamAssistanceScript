@@ -3,15 +3,19 @@
 
 - Deno
 
+- VLC Media Player
+
+- Team Fortress 2
+
 - npm rcon-srcds
 
 - npm fast-xml-parser
 
 - npm html-entities
 
-- VLC Media Player
-
 ### Instruction
+
+- the deno install command should install the npm dependencies I think
 
 - Use VB-CABLE to pipe audio to TF2
 
