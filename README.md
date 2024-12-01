@@ -1,7 +1,7 @@
 # ChristmasMicScript
 ### Dependencies
 
-- NodeJS
+- Deno
 
 - npm rcon-srcds
 
@@ -25,8 +25,10 @@
 
 - I have used Mp3tag to set artist and title metadata
 
+- I recommend using VLC's built in filters to apply range compression to the audio, low audio volumes sound very bad with Steam's voice
+
 ### Binds
-- echo VLCPAUSE
-- echo VLCNEXT
-- echo VLCPLAY
-- echo VLCINFO
+- VLCPAUSE
+- VLCNEXT
+- VLCPLAY
+- VLCINFO

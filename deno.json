@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "rcon-srcds": "npm:rcon-srcds@2.1.0",
+    "fast-xml-parser": "npm:fast-xml-parser@4.5.0",
+    "html-entities": "npm:html-entities@2.5.2"
+  }
+}

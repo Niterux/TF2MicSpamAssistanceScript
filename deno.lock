@@ -1,0 +1,32 @@
+{
+  "version": "4",
+  "specifiers": {
+    "npm:fast-xml-parser@4.5.0": "4.5.0",
+    "npm:html-entities@2.5.2": "2.5.2",
+    "npm:rcon-srcds@2.1.0": "2.1.0"
+  },
+  "npm": {
+    "fast-xml-parser@4.5.0": {
+      "integrity": "sha512-/PlTQCI96+fZMAOLMZK4CWG1ItCbfZ/0jx7UIJFChPNrx7tcEgerUgWbeieCM9MfHInUDyK8DWYZ+YrywDJuTg==",
+      "dependencies": [
+        "strnum"
+      ]
+    },
+    "html-entities@2.5.2": {
+      "integrity": "sha512-K//PSRMQk4FZ78Kyau+mZurHn3FH0Vwr+H36eE0rPbeYkRRi9YxceYPhuN60UwWorxyKHhqoAJl2OFKa4BVtaA=="
+    },
+    "rcon-srcds@2.1.0": {
+      "integrity": "sha512-kkF32wt+xsX19b6wrerU8qTOHa9AX81eJTffgZD0FfaVV2U+sL1gFr5W2VX4m+ILh/l4ZEAYBHx653l2Ci+h+Q=="
+    },
+    "strnum@1.0.5": {
+      "integrity": "sha512-J8bbNyKKXl5qYcR36TIO8W3mVGVHrmmxsd5PAItGkmyzwJvybiw2IVq5nqd0i4LSNSkB/sx9VHllbfFdr9k1JA=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:fast-xml-parser@4.5.0",
+      "npm:html-entities@2.5.2",
+      "npm:rcon-srcds@2.1.0"
+    ]
+  }
+}
