@@ -205,7 +205,8 @@ async function RCONSUCCESS() {
         alias VLCPAUSE "echo ${VLCPauseWord}"
         alias VLCINFO "echo ${VLCInfoWord}"
         alias VLCNEXT "echo ${VLCNextWord}"
-        voice_loopback 1`);
+        voice_loopback 1
+        ds_enable 2`);
     clearInterval(authRetry);
     await sendVLCCommand("pl_forcepause");
     await readNewLines();

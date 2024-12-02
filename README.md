@@ -15,11 +15,11 @@
 
 ### Instruction
 
-- the deno install command should install the npm dependencies I think
+- Running the deno install in the script directory will install the needed NPM dependencies
 
 - Use VB-CABLE to pipe audio to TF2
 
-- Demo support must be enabled for all servers in TF2
+- Demo support will be enabled for all servers in TF2
 
 - Please configure all paths and launch options in the script file
 
