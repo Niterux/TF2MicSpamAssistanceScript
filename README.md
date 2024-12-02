@@ -17,8 +17,6 @@
 
 - Demo support must be enabled for all servers in TF2
 
-- VLC must have its web interface enabled
-
 - Please configure all paths and launch options in the script file
 
 - Please remove any TF2 mods you have that may overwrite con_logfile (Some huds may do this, mastercomfig does not do this)
