@@ -1,6 +1,6 @@
-import {default as RCON} from "rcon-srcds";
-import {XMLParser} from "fast-xml-parser";
-import {decode} from "html-entities";
+import { default as RCON } from "rcon-srcds";
+import { XMLParser } from "fast-xml-parser";
+import { decode } from "html-entities";
 
 const parser = new XMLParser(
     {
@@ -15,7 +15,8 @@ const parser = new XMLParser(
             _isLeafNode: boolean,
             _isAttribute: boolean,
         ) => {
-            return jPath === "root.information.category" || jPath === "root.information.category.info";
+            return jPath === "root.information.category" ||
+                jPath === "root.information.category.info";
         },
     },
 );
@@ -65,14 +66,14 @@ async function readStreamAsText(stream: ReadableStream, format: string) {
     let text: string = "";
     let wholeBufferLength: number = 0;
     for await (const chunk of stream) {
-        text += decoder.decode(chunk, {stream: true});
+        text += decoder.decode(chunk, { stream: true });
         wholeBufferLength += chunk.length;
     }
-    return {text: text, size: wholeBufferLength};
+    return { text: text, size: wholeBufferLength };
 }
 
 async function readNewLines() {
-    using conLogFileHandle = await Deno.open(conLogPath, {read: true});
+    using conLogFileHandle = await Deno.open(conLogPath, { read: true });
     await conLogFileHandle.seek(fileSize, Deno.SeekMode.Start);
     const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     const allNewText = streamData.text;
@@ -99,7 +100,7 @@ async function readNewLines() {
             sendTF2Command("+voicerecord;-voicerecord");
         }
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
-        consecutive echo commands should be on their own line*/
+                    consecutive echo commands should be on their own line*/
         if (
             lines[i].startsWith("(Demo Support) End recording") ||
             lines[i].includes(`${VLCPauseWord} `) ||
@@ -123,11 +124,11 @@ async function readNewLines() {
     return;
 }
 
-const teamFortress = new Deno.Command(TF2Path, {args: TF2Args}).spawn();
+const teamFortress = new Deno.Command(TF2Path, { args: TF2Args }).spawn();
 teamFortress.output().then(() => {
     Deno.exit(0);
 });
-const VLC = new Deno.Command(VLCPath, {args: VLCArgs}).spawn();
+const VLC = new Deno.Command(VLCPath, { args: VLCArgs }).spawn();
 VLC.output().then(() => {
     Deno.exit(0);
 });
@@ -137,13 +138,13 @@ globalThis.addEventListener("unload", beforeUnload);
 function beforeUnload() {
     try {
         VLC.kill();
-    } catch (error) {
-
+    } catch {
+        //ignore
     }
     try {
         teamFortress.kill();
-    } catch (error) {
-
+    } catch {
+        //ignore
     }
 }
 
@@ -220,17 +221,16 @@ async function checkMetaData() {
         return false;
     }
     const jObj = parser.parse(await response.text());
-
-    timestampString = ` Currently at ${
-        convertSecondsToTimestamp(jObj.root.time["#text"], 1)
-    }/${convertSecondsToTimestamp(jObj.root.length["#text"], 1)}.`;
+    const TSTime = convertSecondsToTimestamp(jObj.root.time["#text"], 1);
+    const TSLength = convertSecondsToTimestamp(jObj.root.length["#text"], 1);
+    timestampString = ` Currently at ${TSTime}/${TSLength}.`;
     if (jObj.root.state["#text"] != "playing") {
         return true;
     }
     let metaInfo = [];
-    let artistName = ""
-    let titleName = ""
-    let fileName = ""
+    let artistName = "";
+    let titleName = "";
+    let fileName = "";
     for (
         const cat of jObj.root.information.category
         ) {
@@ -238,7 +238,7 @@ async function checkMetaData() {
             metaInfo = cat.info;
         }
     }
-    for (let info of metaInfo) {
+    for (const info of metaInfo) {
         switch (info["@_name"]) {
             case "artist":
                 artistName = info["#text"];
@@ -252,7 +252,7 @@ async function checkMetaData() {
         }
     }
     let tempString: string;
-    let incompleteMeta: boolean = (artistName === "" || titleName === "")
+    const incompleteMeta: boolean = artistName === "" || titleName === "";
     if (incompleteMeta) {
         tempString = ` Playing: ${fileName}.`;
     } else {
@@ -265,8 +265,10 @@ async function checkMetaData() {
         return true;
     }
     if (incompleteMeta) {
-        console.warn(`Invalid metadata in: ${fileName}, title: ${titleName}, artist: ${artistName}.
-fix this using Mp3tag or similar.`);
+        console.warn(
+            `Invalid metadata in: ${fileName}, title: ${titleName}, artist: ${artistName}.
+fix this using Mp3tag or similar.`,
+        );
     }
     chatString = tempString;
     announceSong(false);
@@ -286,7 +288,7 @@ function announceSong(timestamp: boolean | undefined) {
 function sendVLCCommand(command: string) {
     return fetch(
         `http://:${VLCPassword}@127.0.0.1:${VLCPort}/requests/status.xml?command=${command}`,
-        {method: "HEAD"},
+        { method: "HEAD" },
     );
 }
 
