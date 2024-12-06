@@ -1,0 +1,30 @@
+[TF2]
+# Path to the TF2 binary
+TF2Path = 'C:\Program Files (x86)\Steam\steamapps\common\Team Fortress 2\tf_win64.exe'
+# Path to the TF2 console log output (con_logfile)
+ConLogPath = 'C:\Program Files (x86)\Steam\steamapps\common\Team Fortress 2\tf\console.log'
+# The port for TF2 to start its RCON server on
+TF2Port = 27015
+# Maximum authorization attempts for TF2 RCON before quitting
+MaxAuthRetries = 10
+# Detect line endings in console.log with LF instead of CRLF, only use this if you play TF2 on the native Linux port.
+LinuxLineEndings = false
+# Launch arguments to add to TF2 other than those required for this script to work
+TF2LaunchArguments = '''
+-novid
+-nojoy
+-nosteamcontroller
+-nohltv
+-particles 1
+-precachefontchars
+'''
+[VLC]
+# Path to VLC Media Player
+VLCPath = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
+# Path to your Christmas playlist
+PlaylistPath = 'E:\Hella Gud Christmas Playlist\christmas.m3u'
+# Port for VLC to start its web server on
+VLCPort = 9090
+[Other]
+# Milliseconds between checking console.log and VLC Media Player's status, recommended values range from 100 to 1000
+RefreshMilliseconds = 400

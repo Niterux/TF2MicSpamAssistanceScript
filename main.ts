@@ -1,8 +1,9 @@
-import { default as RCON } from "rcon-srcds";
-import { XMLParser } from "fast-xml-parser";
-import { decode } from "html-entities";
+import {default as RCON} from "rcon-srcds";
+import {XMLParser} from "fast-xml-parser";
+import {decode} from "html-entities";
+import * as toml from "jsr:@std/toml";
 
-const parser = new XMLParser(
+const parser: XMLParser = new XMLParser(
     {
         ignoreAttributes: false,
         alwaysCreateTextNode: true,
@@ -20,70 +21,102 @@ const parser = new XMLParser(
         },
     },
 );
-const possibleChars: string = "abcdefghijklmnopqrstuvwxyz";
 const TF2Password: string = generateRandomString();
 const VLCPassword: string = generateRandomString();
-console.log(`VLC HTTP Password: ${VLCPassword}`);
+const VLCPlayWord: string = generateRandomString();
+const VLCPauseWord: string = generateRandomString();
+const VLCInfoWord: string = generateRandomString();
+const VLCNextWord: string = generateRandomString();
+const defaultConfig: object = {
+    TF2: {
+        TF2Path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf_win64.exe",
+        ConLogPath: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\console.log",
+        TF2Port: 27015,
+        MaxAuthRetries: 10,
+        LinuxLineEndings: false,
+        TF2LaunchArguments: "-novid\n" +
+            "-nojoy\n" +
+            "-nosteamcontroller\n" +
+            "-nohltv\n" +
+            "-particles 1\n" +
+            "-precachefontchars\n"
+    },
+    VLC: {
+        VLCPath: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
+        PlaylistPath: "E:\\Hella Gud Christmas Playlist\\christmas.m3u",
+        VLCPort: 9090
+    },
+    Other: {RefreshMilliseconds: 400}
+}
 
-//start of configuration
-const conLogPath: string =
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\console.log";
-const TF2Path: string =
-    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf_win64.exe";
-const VLCPath: string = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe";
-const playlistPath: string = "E:\\Hella Gud Christmas Playlist\\christmas.m3u";
-const TF2Port: number = 27015;
-const VLCPort: number = 9090;
-const refreshMilliseconds: number = 400;
-const maxAuthRetries: number = 10;
-const TF2Args: string[] = `-steam
--novid
--nojoy
--nosteamcontroller
--nohltv
--particles 1
--precachefontchars
+let config: object;
+let fileSize = 0;
+let firstRead = false;
+let authRetry: number;
+let authRetryCounter: number = 0;
+let TF2Args: string[];
+let VLCArgs: string[];
+
+function loadConfig() {
+    let failedRead = false;
+    let TOMLObj;
+    try {
+        const decoder = new TextDecoder("utf-8");
+        const TOMLText = decoder.decode(Deno.readFileSync("config.toml"));
+        TOMLObj = toml.parse(TOMLText);
+    } catch (e) {
+        failedRead = true;
+        if (e.name === "NotFound") {
+            console.warn("Warning: Could not find config.toml file, default config will be used.")
+        } else {
+            console.error(e)
+        }
+        ;
+    }
+    if (!failedRead) {
+        config = recursiveMerge(defaultConfig, TOMLObj);
+    } else {
+        config = defaultConfig;
+    }
+    const TF2BuiltInArgs: string[] = `-steam
 -condebug
 -conclearlog
 -usercon
 +ip 127.0.0.1
 +sv_rcon_whitelist_address 127.0.0.1
 +rcon_password ${TF2Password}
-+hostport ${TF2Port}
++hostport ${config.TF2.TF2Port}
 +net_start`.split("\n");
-const VLCArgs: string[] = `${playlistPath}
+    TF2Args = [...TF2BuiltInArgs, ...config.TF2.TF2LaunchArguments.split("\n")];
+    VLCArgs = `${config.VLC.PlaylistPath}
 --extraintf=http
 --http-host=127.0.0.1
---http-port=${VLCPort}
+--http-port=${config.VLC.VLCPort}
 --http-password=${VLCPassword}`.split("\n");
-//end of configuration
+}
 
-let fileSize = 0;
-let firstRead = false;
-
-async function readStreamAsText(stream: ReadableStream, format: string) {
+async function readStreamAsText(stream: ReadableStream, format: string): object {
     const decoder: TextDecoder = new TextDecoder(format);
     let text: string = "";
     let wholeBufferLength: number = 0;
     for await (const chunk of stream) {
-        text += decoder.decode(chunk, { stream: true });
+        text += decoder.decode(chunk, {stream: true});
         wholeBufferLength += chunk.length;
     }
-    return { text: text, size: wholeBufferLength };
+    return {text: text, size: wholeBufferLength};
 }
 
-async function readNewLines() {
-    using conLogFileHandle = await Deno.open(conLogPath, { read: true });
+async function readNewLines(): void {
+    using conLogFileHandle: FsFile = await Deno.open(config.TF2.ConLogPath, {read: true});
     await conLogFileHandle.seek(fileSize, Deno.SeekMode.Start);
-    const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
-    const allNewText = streamData.text;
+    const streamData: object = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
-    const lines = allNewText.split("\r\n");
+    const lines: string[] = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
     // Wait for a while before checking for new data
-    setTimeout(() => {
+    setTimeout((): void => {
         readNewLines();
         checkMetaData();
-    }, refreshMilliseconds);
+    }, config.Other.RefreshMilliseconds);
     if (streamData.size === 0) {
         return;
     }
@@ -100,7 +133,7 @@ async function readNewLines() {
             sendTF2Command("+voicerecord;-voicerecord");
         }
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
-                    consecutive echo commands should be on their own line*/
+                        consecutive echo commands should be on their own line*/
         if (
             lines[i].startsWith("(Demo Support) End recording") ||
             lines[i].includes(`${VLCPauseWord} `) ||
@@ -124,17 +157,6 @@ async function readNewLines() {
     return;
 }
 
-const teamFortress = new Deno.Command(TF2Path, { args: TF2Args }).spawn();
-teamFortress.output().then(() => {
-    Deno.exit(0);
-});
-const VLC = new Deno.Command(VLCPath, { args: VLCArgs }).spawn();
-VLC.output().then(() => {
-    Deno.exit(0);
-});
-Deno.addSignalListener("SIGINT", beforeUnload);
-globalThis.addEventListener("unload", beforeUnload);
-
 function beforeUnload() {
     try {
         VLC.kill();
@@ -148,14 +170,11 @@ function beforeUnload() {
     }
 }
 
-const RCONClient = new RCON.default(
-    {
-        port: TF2Port,
-        encoding: "utf8",
-    },
-);
-
+/**
+ * Generates a random cryptographic string
+ */
 function generateRandomString(): string {
+    const possibleChars: string = "abcdefghijklmnopqrstuvwxyz";
     const randNumbers: Uint32Array = crypto.getRandomValues(new Uint32Array(32));
 
     let randomString: string = "";
@@ -165,19 +184,14 @@ function generateRandomString(): string {
     return randomString;
 }
 
-const VLCPlayWord: string = generateRandomString();
-const VLCPauseWord: string = generateRandomString();
-const VLCInfoWord: string = generateRandomString();
-const VLCNextWord: string = generateRandomString();
-let authRetry: number;
-let authRetryCounter: number = 0;
-
 function tryAuth() {
     authRetry = setTimeout(function () {
         console.log("Attempting RCON connection to TF2");
-        authRetryCounter--;
+        if (authRetryCounter++ === config.TF2.MaxAuthRetries) {
+            throw "Could not establish RCON connection to TF2";
+        }
         RCONClient.authenticate(TF2Password)
-            .then(RCONSUCCESS)
+            .then(RCONSuccess)
             .catch(function (e) {
                 if (e.message.includes("ECONNREFUSED")) {
                     tryAuth();
@@ -189,18 +203,14 @@ function tryAuth() {
                     Deno.exit(1);
                 }
             });
-        if (authRetryCounter === maxAuthRetries) {
-            throw "Could not establish RCON connection to TF2";
-        }
     }, 5000);
 }
 
-tryAuth();
 
 let chatString = "";
 let timestampString = " at 0:00/0:00";
 
-async function RCONSUCCESS() {
+async function RCONSuccess() {
     console.log("Authenticated with TF2");
     sendTF2Command(`alias VLCPLAY "echo ${VLCPlayWord}"
         alias VLCPAUSE "echo ${VLCPauseWord}"
@@ -215,7 +225,7 @@ async function RCONSUCCESS() {
 
 async function checkMetaData() {
     const response = await fetch(
-        `http://:${VLCPassword}@127.0.0.1:${VLCPort}/requests/status.xml`,
+        `http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`,
     );
     if (!response.ok || response.body === null) {
         return false;
@@ -259,8 +269,8 @@ async function checkMetaData() {
         tempString = ` Playing: ${artistName} - ${titleName}.`;
     }
 
-    //this has to be decoded twice, VLC WHY!!!!! (&amp;amp;)
-    tempString = decode(decode(tempString));
+    // This has to be decoded twice
+    tempString = decode(decode(tempString, {level: "xml"}), {level: "html5"});
     if (chatString === tempString) {
         return true;
     }
@@ -275,7 +285,7 @@ fix this using Mp3tag or similar.`,
     return true;
 }
 
-function announceSong(timestamp: boolean | undefined) {
+function announceSong(timestamp: boolean | undefined): void {
     if (!timestamp) {
         RCONClient.execute(formatChatMessage(`Now${chatString}`));
     } else {
@@ -285,14 +295,14 @@ function announceSong(timestamp: boolean | undefined) {
     }
 }
 
-function sendVLCCommand(command: string) {
+function sendVLCCommand(command: string): Promise<Response> {
     return fetch(
-        `http://:${VLCPassword}@127.0.0.1:${VLCPort}/requests/status.xml?command=${command}`,
-        { method: "HEAD" },
+        `http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml?command=${command}`,
+        {method: "HEAD"},
     );
 }
 
-function sendTF2Command(command: string) {
+function sendTF2Command(command: string): void {
     RCONClient.execute(command);
 }
 
@@ -309,6 +319,7 @@ function formatChatMessage(message: string) {
     return "say_team " + message;
 }
 
+// I don't know what I'll do with seconds over 59 hours long
 /**
  * Returns a string of the seconds formatted as a timestamp (5:54)
  * @param seconds Seconds to use for the calculation.
@@ -325,17 +336,16 @@ function convertSecondsToTimestamp(
         minSeparators = 0;
     }
     minSeparators = Math.floor(minSeparators);
-    const calculatedSeparators = Math.floor(
+    const calculatedSeparators: number = Math.floor(
         Math.max(Math.log(seconds), 0) / Math.log(60),
     );
-    const separators = Math.max(
+    const separators: number = Math.max(
         calculatedSeparators,
         minSeparators,
     );
-    const outputTimes = [];
-    for (let i = separators; i >= 0; i--) {
-        const addedSegment = (Math.floor(seconds % 60))
-            .toString();
+    const outputTimes: string[] = [];
+    for (let i: number = separators; i >= 0; i--) {
+        const addedSegment: string = (Math.floor(seconds % 60)).toString();
         if (i === 0) {
             outputTimes.unshift(addedSegment.padStart(1, "0"));
         } else {
@@ -345,3 +355,36 @@ function convertSecondsToTimestamp(
     }
     return outputTimes.join(":");
 }
+
+// This will probably crash if base is an array and overlay is an object but I can't be bothered 🤷
+function recursiveMerge(base: object, overlay: object): object {
+    let newObject: object = structuredClone(base);
+    for (const key: string of Object.keys(overlay)) {
+        if (typeof overlay[key] === "object" && typeof base[key] === "object") {
+            newObject[key] = recursiveMerge(base[key], overlay[key]);
+        } else {
+            newObject[key] = overlay[key];
+        }
+    }
+    return newObject;
+}
+
+loadConfig()
+console.debug(`VLC HTTP Password: ${VLCPassword}`);
+const teamFortress = new Deno.Command(config.TF2.TF2Path, {args: TF2Args}).spawn();
+teamFortress.output().then(() => {
+    Deno.exit(0);
+});
+const VLC = new Deno.Command(config.VLC.VLCPath, {args: VLCArgs}).spawn();
+VLC.output().then(() => {
+    Deno.exit(0);
+});
+Deno.addSignalListener("SIGINT", beforeUnload);
+globalThis.addEventListener("unload", beforeUnload);
+const RCONClient = new RCON.default(
+    {
+        port: config.TF2.TF2Port,
+        encoding: "utf8",
+    },
+);
+tryAuth();
