@@ -15,7 +15,7 @@
 
 ### Instruction
 
-- Running the deno install in the script directory will install the needed NPM dependencies
+- Running `deno install` command in the script directory will install the needed NPM dependencies
 
 - Use VB-CABLE to pipe audio to TF2
 
