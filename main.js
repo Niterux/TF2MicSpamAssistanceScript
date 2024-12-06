@@ -3,24 +3,13 @@ import {XMLParser} from "fast-xml-parser";
 import {decode} from "html-entities";
 import * as toml from "jsr:@std/toml";
 
-const parser = new XMLParser(
-    {
-        ignoreAttributes: false,
-        alwaysCreateTextNode: true,
-        processEntities: false,
-        //FIX: while changing songs VLC may fail to respond with stream info
-        //this causes FXP to assume that category should be an object instead of array
-        isArray: (
-            _tagName,
-            jPath,
-            _isLeafNode,
-            _isAttribute,
-        ) => {
-            return jPath === "root.information.category" ||
-                jPath === "root.information.category.info";
-        },
+const parser = new XMLParser({
+    ignoreAttributes: false, alwaysCreateTextNode: true, processEntities: false, //FIX: while changing songs VLC may fail to respond with stream info
+    //this causes FXP to assume that category should be an object instead of array
+    isArray: (_tagName, jPath, _isLeafNode, _isAttribute,) => {
+        return jPath === "root.information.category" || jPath === "root.information.category.info";
     },
-);
+},);
 const TF2Password = generateRandomString();
 const VLCPassword = generateRandomString();
 const VLCPlayWord = generateRandomString();
@@ -34,19 +23,12 @@ const defaultConfig = {
         TF2Port: 27015,
         MaxAuthRetries: 10,
         LinuxLineEndings: false,
-        TF2LaunchArguments: "-novid\n" +
-            "-nojoy\n" +
-            "-nosteamcontroller\n" +
-            "-nohltv\n" +
-            "-particles 1\n" +
-            "-precachefontchars\n"
-    },
-    VLC: {
+        TF2LaunchArguments: "-novid\n" + "-nojoy\n" + "-nosteamcontroller\n" + "-nohltv\n" + "-particles 1\n" + "-precachefontchars\n"
+    }, VLC: {
         VLCPath: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
         PlaylistPath: "E:\\Hella Gud Christmas Playlist\\christmas.m3u",
         VLCPort: 9090
-    },
-    Other: {RefreshMilliseconds: 400}
+    }, Other: {RefreshMilliseconds: 400}
 }
 
 let config;
@@ -126,20 +108,12 @@ async function readNewLines() {
         return;
     }
     for (let i = 0; i < lines.length; i++) {
-        if (
-            lines[i].startsWith(
-                "(Demo Support) Start recording demos",
-            )
-        ) {
+        if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
             sendTF2Command("+voicerecord;-voicerecord");
         }
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
                         consecutive echo commands should be on their own line*/
-        if (
-            lines[i].startsWith("(Demo Support) End recording") ||
-            lines[i].includes(`${VLCPauseWord} `) ||
-            lines[i].startsWith("You have switched to team")
-        ) {
+        if (lines[i].startsWith("(Demo Support) End recording") || lines[i].includes(`${VLCPauseWord} `) || lines[i].startsWith("You have switched to team")) {
             await sendVLCCommand("pl_forcepause");
             sendTF2Command("-voicerecord");
         }
@@ -221,9 +195,7 @@ async function RCONSuccess() {
 }
 
 async function checkMetaData() {
-    const response = await fetch(
-        `http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`,
-    );
+    const response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`,);
     if (!response.ok || response.body === null) {
         return false;
     }
@@ -238,9 +210,7 @@ async function checkMetaData() {
     let artistName = "";
     let titleName = "";
     let fileName = "";
-    for (
-        const cat of jObj.root.information.category
-        ) {
+    for (const cat of jObj.root.information.category) {
         if (cat["@_name"] === "meta") {
             metaInfo = cat.info;
         }
@@ -272,10 +242,8 @@ async function checkMetaData() {
         return true;
     }
     if (incompleteMeta) {
-        console.warn(
-            `Invalid metadata in: ${fileName}, title: ${titleName}, artist: ${artistName}.
-fix this using Mp3tag or similar.`,
-        );
+        console.warn(`Invalid metadata in: ${fileName}, title: ${titleName}, artist: ${artistName}.
+fix this using Mp3tag or similar.`,);
     }
     chatString = tempString;
     announceSong(false);
@@ -286,17 +254,12 @@ function announceSong(timestamp) {
     if (!timestamp) {
         RCONClient.execute(formatChatMessage(`Now${chatString}`));
     } else {
-        RCONClient.execute(formatChatMessage(
-            `Currently${chatString + timestampString}`,
-        ));
+        RCONClient.execute(formatChatMessage(`Currently${chatString + timestampString}`,));
     }
 }
 
 function sendVLCCommand(command) {
-    return fetch(
-        `http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml?command=${command}`,
-        {method: "HEAD"},
-    );
+    return fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml?command=${command}`, {method: "HEAD"},);
 }
 
 function sendTF2Command(command) {
@@ -322,10 +285,7 @@ function formatChatMessage(message) {
  * @param seconds Seconds to use for the calculation.
  * @param minSeparators Minimum amount of ":" in the result.
  */
-function convertSecondsToTimestamp(
-    seconds,
-    minSeparators,
-) {
+function convertSecondsToTimestamp(seconds, minSeparators,) {
     if (seconds < 0) {
         seconds = 0;
     }
@@ -333,13 +293,8 @@ function convertSecondsToTimestamp(
         minSeparators = 0;
     }
     minSeparators = Math.floor(minSeparators);
-    const calculatedSeparators = Math.floor(
-        Math.max(Math.log(seconds), 0) / Math.log(60),
-    );
-    const separators = Math.max(
-        calculatedSeparators,
-        minSeparators,
-    );
+    const calculatedSeparators = Math.floor(Math.max(Math.log(seconds), 0) / Math.log(60),);
+    const separators = Math.max(calculatedSeparators, minSeparators,);
     const outputTimes = [];
     for (let i = separators; i >= 0; i--) {
         const addedSegment = (Math.floor(seconds % 60)).toString();
@@ -353,10 +308,15 @@ function convertSecondsToTimestamp(
     return outputTimes.join(":");
 }
 
-// This will probably crash if base is an array and overlay is an object but I can't be bothered 🤷
 function recursiveMerge(base, overlay) {
-    let newObject = structuredClone(base);
+    let newObject
+    if (Array.isArray(base) && !Array.isArray(overlay)) {
+        newObject = Object.assign({}, base);
+    } else {
+        newObject = structuredClone(base);
+    }
     for (const key of Object.keys(overlay)) {
+        if (overlay[key].constructor !== base[key].constructor) continue;
         if (typeof overlay[key] === "object" && typeof base[key] === "object") {
             newObject[key] = recursiveMerge(base[key], overlay[key]);
         } else {
@@ -378,10 +338,7 @@ VLC.output().then(() => {
 });
 Deno.addSignalListener("SIGINT", beforeUnload);
 globalThis.addEventListener("unload", beforeUnload);
-const RCONClient = new RCON.default(
-    {
-        port: config.TF2.TF2Port,
-        encoding: "utf8",
-    },
-);
+const RCONClient = new RCON.default({
+    port: config.TF2.TF2Port, encoding: "utf8",
+},);
 tryAuth();
