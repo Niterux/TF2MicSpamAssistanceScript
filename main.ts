@@ -52,6 +52,8 @@ const defaultConfig: object = {
 let config: object;
 let fileSize = 0;
 let firstRead = false;
+let chatString = "";
+let timestampString = " at 0:00/0:00";
 let authRetry: number;
 let authRetryCounter: number = 0;
 let TF2Args: string[];
@@ -83,9 +85,9 @@ function loadConfig() {
 -conclearlog
 -usercon
 +ip 127.0.0.1
+-port ${config.TF2.TF2Port}
 +sv_rcon_whitelist_address 127.0.0.1
 +rcon_password ${TF2Password}
-+hostport ${config.TF2.TF2Port}
 +net_start`.split("\n");
     TF2Args = [...TF2BuiltInArgs, ...config.TF2.TF2LaunchArguments.split("\n")];
     VLCArgs = `${config.VLC.PlaylistPath}
@@ -205,10 +207,6 @@ function tryAuth() {
             });
     }, 5000);
 }
-
-
-let chatString = "";
-let timestampString = " at 0:00/0:00";
 
 async function RCONSuccess() {
     console.log("Authenticated with TF2");
