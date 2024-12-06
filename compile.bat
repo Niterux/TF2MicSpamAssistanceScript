@@ -1,1 +1,1 @@
-deno compile --allow-run --allow-net --allow-read main.ts
+deno compile --allow-run --allow-net --allow-read main.js

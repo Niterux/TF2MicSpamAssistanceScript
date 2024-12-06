@@ -3,7 +3,7 @@ import {XMLParser} from "fast-xml-parser";
 import {decode} from "html-entities";
 import * as toml from "jsr:@std/toml";
 
-const parser: XMLParser = new XMLParser(
+const parser = new XMLParser(
     {
         ignoreAttributes: false,
         alwaysCreateTextNode: true,
@@ -11,23 +11,23 @@ const parser: XMLParser = new XMLParser(
         //FIX: while changing songs VLC may fail to respond with stream info
         //this causes FXP to assume that category should be an object instead of array
         isArray: (
-            _tagName: string,
-            jPath: string,
-            _isLeafNode: boolean,
-            _isAttribute: boolean,
+            _tagName,
+            jPath,
+            _isLeafNode,
+            _isAttribute,
         ) => {
             return jPath === "root.information.category" ||
                 jPath === "root.information.category.info";
         },
     },
 );
-const TF2Password: string = generateRandomString();
-const VLCPassword: string = generateRandomString();
-const VLCPlayWord: string = generateRandomString();
-const VLCPauseWord: string = generateRandomString();
-const VLCInfoWord: string = generateRandomString();
-const VLCNextWord: string = generateRandomString();
-const defaultConfig: object = {
+const TF2Password = generateRandomString();
+const VLCPassword = generateRandomString();
+const VLCPlayWord = generateRandomString();
+const VLCPauseWord = generateRandomString();
+const VLCInfoWord = generateRandomString();
+const VLCNextWord = generateRandomString();
+const defaultConfig = {
     TF2: {
         TF2Path: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf_win64.exe",
         ConLogPath: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\console.log",
@@ -49,15 +49,15 @@ const defaultConfig: object = {
     Other: {RefreshMilliseconds: 400}
 }
 
-let config: object;
+let config;
 let fileSize = 0;
 let firstRead = false;
 let chatString = "";
 let timestampString = " at 0:00/0:00";
-let authRetry: number;
-let authRetryCounter: number = 0;
-let TF2Args: string[];
-let VLCArgs: string[];
+let authRetry;
+let authRetryCounter = 0;
+let TF2Args;
+let VLCArgs;
 
 function loadConfig() {
     let failedRead = false;
@@ -68,19 +68,18 @@ function loadConfig() {
         TOMLObj = toml.parse(TOMLText);
     } catch (e) {
         failedRead = true;
-        if (e.name === "NotFound") {
+        if (e instanceof Error && e.name === "NotFound") {
             console.warn("Warning: Could not find config.toml file, default config will be used.")
         } else {
             console.error(e)
         }
-        ;
     }
     if (!failedRead) {
         config = recursiveMerge(defaultConfig, TOMLObj);
     } else {
         config = defaultConfig;
     }
-    const TF2BuiltInArgs: string[] = `-steam
+    const TF2BuiltInArgs = `-steam
 -condebug
 -conclearlog
 -usercon
@@ -97,10 +96,10 @@ function loadConfig() {
 --http-password=${VLCPassword}`.split("\n");
 }
 
-async function readStreamAsText(stream: ReadableStream, format: string): object {
-    const decoder: TextDecoder = new TextDecoder(format);
-    let text: string = "";
-    let wholeBufferLength: number = 0;
+async function readStreamAsText(stream, format) {
+    const decoder = new TextDecoder(format);
+    let text = "";
+    let wholeBufferLength = 0;
     for await (const chunk of stream) {
         text += decoder.decode(chunk, {stream: true});
         wholeBufferLength += chunk.length;
@@ -108,14 +107,14 @@ async function readStreamAsText(stream: ReadableStream, format: string): object 
     return {text: text, size: wholeBufferLength};
 }
 
-async function readNewLines(): void {
-    using conLogFileHandle: FsFile = await Deno.open(config.TF2.ConLogPath, {read: true});
+async function readNewLines() {
+    const conLogFileHandle = await Deno.open(config.TF2.ConLogPath, {read: true});
     await conLogFileHandle.seek(fileSize, Deno.SeekMode.Start);
-    const streamData: object = await readStreamAsText(conLogFileHandle.readable, "utf-8");
+    const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
-    const lines: string[] = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
+    const lines = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
     // Wait for a while before checking for new data
-    setTimeout((): void => {
+    setTimeout(() => {
         readNewLines();
         checkMetaData();
     }, config.Other.RefreshMilliseconds);
@@ -175,12 +174,12 @@ function beforeUnload() {
 /**
  * Generates a random cryptographic string
  */
-function generateRandomString(): string {
-    const possibleChars: string = "abcdefghijklmnopqrstuvwxyz";
-    const randNumbers: Uint32Array = crypto.getRandomValues(new Uint32Array(32));
+function generateRandomString() {
+    const possibleChars = "abcdefghijklmnopqrstuvwxyz";
+    const randNumbers = crypto.getRandomValues(new Uint32Array(32));
 
-    let randomString: string = "";
-    for (let i: number = 0; i < randNumbers.length; i++) {
+    let randomString = "";
+    for (let i = 0; i < randNumbers.length; i++) {
         randomString += possibleChars[randNumbers[i] % possibleChars.length];
     }
     return randomString;
@@ -259,8 +258,8 @@ async function checkMetaData() {
                 break;
         }
     }
-    let tempString: string;
-    const incompleteMeta: boolean = artistName === "" || titleName === "";
+    let tempString;
+    const incompleteMeta = artistName === "" || titleName === "";
     if (incompleteMeta) {
         tempString = ` Playing: ${fileName}.`;
     } else {
@@ -283,7 +282,7 @@ fix this using Mp3tag or similar.`,
     return true;
 }
 
-function announceSong(timestamp: boolean | undefined): void {
+function announceSong(timestamp) {
     if (!timestamp) {
         RCONClient.execute(formatChatMessage(`Now${chatString}`));
     } else {
@@ -293,14 +292,14 @@ function announceSong(timestamp: boolean | undefined): void {
     }
 }
 
-function sendVLCCommand(command: string): Promise<Response> {
+function sendVLCCommand(command) {
     return fetch(
         `http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml?command=${command}`,
         {method: "HEAD"},
     );
 }
 
-function sendTF2Command(command: string): void {
+function sendTF2Command(command) {
     RCONClient.execute(command);
 }
 
@@ -308,7 +307,7 @@ function sendTF2Command(command: string): void {
  * Formats a message to be a TF2 team chat command.
  * @param message original text to be converted to a command
  */
-function formatChatMessage(message: string) {
+function formatChatMessage(message) {
     message.replaceAll('"', "''");
     if (message.length > 127) {
         message = message.slice(0, 124);
@@ -324,8 +323,8 @@ function formatChatMessage(message: string) {
  * @param minSeparators Minimum amount of ":" in the result.
  */
 function convertSecondsToTimestamp(
-    seconds: number,
-    minSeparators: number | undefined,
+    seconds,
+    minSeparators,
 ) {
     if (seconds < 0) {
         seconds = 0;
@@ -334,16 +333,16 @@ function convertSecondsToTimestamp(
         minSeparators = 0;
     }
     minSeparators = Math.floor(minSeparators);
-    const calculatedSeparators: number = Math.floor(
+    const calculatedSeparators = Math.floor(
         Math.max(Math.log(seconds), 0) / Math.log(60),
     );
-    const separators: number = Math.max(
+    const separators = Math.max(
         calculatedSeparators,
         minSeparators,
     );
-    const outputTimes: string[] = [];
-    for (let i: number = separators; i >= 0; i--) {
-        const addedSegment: string = (Math.floor(seconds % 60)).toString();
+    const outputTimes = [];
+    for (let i = separators; i >= 0; i--) {
+        const addedSegment = (Math.floor(seconds % 60)).toString();
         if (i === 0) {
             outputTimes.unshift(addedSegment.padStart(1, "0"));
         } else {
@@ -355,9 +354,9 @@ function convertSecondsToTimestamp(
 }
 
 // This will probably crash if base is an array and overlay is an object but I can't be bothered 🤷
-function recursiveMerge(base: object, overlay: object): object {
-    let newObject: object = structuredClone(base);
-    for (const key: string of Object.keys(overlay)) {
+function recursiveMerge(base, overlay) {
+    let newObject = structuredClone(base);
+    for (const key of Object.keys(overlay)) {
         if (typeof overlay[key] === "object" && typeof base[key] === "object") {
             newObject[key] = recursiveMerge(base[key], overlay[key]);
         } else {
