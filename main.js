@@ -202,7 +202,7 @@ async function checkMetaData() {
     const jObj = parser.parse(await response.text());
     const TSTime = convertSecondsToTimestamp(jObj.root.time["#text"], 1);
     const TSLength = convertSecondsToTimestamp(jObj.root.length["#text"], 1);
-    timestampString = ` Currently at ${TSTime}/${TSLength}.`;
+    timestampString = `${TSTime}/${TSLength}`;
     if (jObj.root.state["#text"] != "playing") {
         return true;
     }
@@ -231,9 +231,9 @@ async function checkMetaData() {
     let tempString;
     const incompleteMeta = artistName === "" || titleName === "";
     if (incompleteMeta) {
-        tempString = ` Playing: ${fileName}.`;
+        tempString = `${fileName}`;
     } else {
-        tempString = ` Playing: ${artistName} - ${titleName}.`;
+        tempString = `${artistName} - ${titleName}`;
     }
 
     // This has to be decoded twice
@@ -252,9 +252,9 @@ fix this using Mp3tag or similar.`,);
 
 function announceSong(timestamp) {
     if (!timestamp) {
-        RCONClient.execute(formatChatMessage(`Now${chatString}`));
+        RCONClient.execute(formatChatMessage(`Now Playing: ${chatString}.`));
     } else {
-        RCONClient.execute(formatChatMessage(`Currently${chatString + timestampString}`,));
+        RCONClient.execute(formatChatMessage(`Currently Playing: ${chatString}. Currently at ${timestampString}.`,));
     }
 }
 
@@ -268,13 +268,17 @@ function sendTF2Command(command) {
 
 /**
  * Formats a message to be a TF2 team chat command.
+ * Cuts text off with a "..." if it's longer than 127 bytes encoded in UTF-8
  * @param message original text to be converted to a command
  */
 function formatChatMessage(message) {
     message.replaceAll('"', "''");
-    if (message.length > 127) {
-        message = message.slice(0, 124);
-        message += "...";
+    const encoder = new TextEncoder();
+    const fitAbleBytes = encoder.encodeInto(message, new Uint8Array(127));
+    if (fitAbleBytes.read < message.length) {
+        const fitTextInto = new Uint8Array(124);
+        const utf8Cut = encoder.encodeInto(message, fitTextInto);
+        message = message.slice(0, utf8Cut.read) + "...";
     }
     return "say_team " + message;
 }
