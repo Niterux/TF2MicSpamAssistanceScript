@@ -1,4 +1,6 @@
 # ChristmasMicScript
+
+This script works by using client RCON and reading the game console as well as interfacing with VLC Media Player using HTTP, this script is VAC free, it works using the same methods as Pazer's TF2 Bot Detector to interface with TF2 and does not do anything dangerous like injecting or hijacking.
 ### Dependencies
 
 - Deno
