@@ -1,6 +1,5 @@
 # ChristmasMicScript
-
-This script works by using client RCON and reading the game console as well as interfacing with VLC Media Player using HTTP, this script is VAC free, it works using the same methods as Pazer's TF2 Bot Detector to interface with TF2 and does not do anything dangerous like injecting or hijacking.
+This script works by using client RCON and reading the game console as well as interfacing with VLC Media Player using HTTP, this script is VAC free. It works using the same methods as Pazer's TF2 Bot Detector to interface with TF2 and does not do anything dangerous like injecting or hijacking.
 ### Dependencies
 
 - Deno
@@ -32,6 +31,7 @@ This script works by using client RCON and reading the game console as well as i
 - I recommend using VLC's built in filters to apply range compression to the audio, low audio volumes sound very bad with Steam's voice, also using the equalizer can mitigate compression artifacts
 
 ### Binds
+You can bind these TF2 commands to keys or just type them into the console to control VLC from within TF2:
 - VLCPAUSE
 - VLCNEXT
 - VLCPLAY

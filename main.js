@@ -40,6 +40,7 @@ let authRetry;
 let authRetryCounter = 0;
 let TF2Args;
 let VLCArgs;
+let VLCWasPaused = false;
 
 function loadConfig() {
     let failedRead = false;
@@ -116,14 +117,17 @@ async function readNewLines() {
         if (lines[i].startsWith("(Demo Support) End recording") || lines[i].includes(`${VLCPauseWord} `) || lines[i].startsWith("You have switched to team")) {
             await sendVLCCommand("pl_forcepause");
             sendTF2Command("-voicerecord");
+            VLCWasPaused = true;
         }
         if (lines[i].includes(`${VLCNextWord} `)) {
             await sendVLCCommand("pl_next");
             sendTF2Command("+voicerecord");
+            VLCWasPaused = false;
         }
         if (lines[i].includes(`${VLCPlayWord} `)) {
             await sendVLCCommand("pl_forceresume");
             sendTF2Command("+voicerecord");
+            VLCWasPaused = false;
         }
         if (lines[i].includes(`${VLCInfoWord} `)) {
             announceSong(true);
@@ -188,14 +192,15 @@ async function RCONSuccess() {
         alias VLCINFO "echo ${VLCInfoWord}"
         alias VLCNEXT "echo ${VLCNextWord}"
         voice_loopback 1
-        ds_enable 2`);
+        ds_enable 2
+        con_timestamp 0`);
     clearInterval(authRetry);
     await sendVLCCommand("pl_forcepause");
     await readNewLines();
 }
 
-async function checkMetaData() {
-    const response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`,);
+async function checkMetaData(responsePromise) {
+    const response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`);
     if (!response.ok || response.body === null) {
         return false;
     }
@@ -203,7 +208,16 @@ async function checkMetaData() {
     const TSTime = convertSecondsToTimestamp(jObj.root.time["#text"], 1);
     const TSLength = convertSecondsToTimestamp(jObj.root.length["#text"], 1);
     timestampString = `${TSTime}/${TSLength}`;
-    if (jObj.root.state["#text"] != "playing") {
+    const paused = (jObj.root.state["#text"] === "paused");
+    if (paused !== VLCWasPaused) {
+        if (paused) {
+            sendTF2Command("-voicerecord");
+        } else {
+            sendTF2Command("+voicerecord");
+        }
+        VLCWasPaused = paused;
+    }
+    if (paused) {
         return true;
     }
     let metaInfo = [];
