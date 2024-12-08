@@ -1,7 +1,7 @@
 import {default as RCON} from "rcon-srcds";
 import {XMLParser} from "fast-xml-parser";
 import {decode} from "html-entities";
-import * as toml from "jsr:@std/toml";
+import * as toml from "toml";
 
 const parser = new XMLParser({
     ignoreAttributes: false, alwaysCreateTextNode: true, processEntities: false, //FIX: while changing songs VLC may fail to respond with stream info
