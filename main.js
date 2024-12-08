@@ -23,7 +23,7 @@ const defaultConfig = {
         TF2Port: 27015,
         MaxAuthRetries: 10,
         LinuxLineEndings: false,
-        TF2LaunchArguments: "-novid\n" + "-nojoy\n" + "-nosteamcontroller\n" + "-nohltv\n" + "-particles 1\n" + "-precachefontchars\n"
+        TF2LaunchArguments: "-novid\n-nojoy\n-nosteamcontroller\n-nohltv\n-particles 1\n-precachefontchars\n"
     }, VLC: {
         VLCPath: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
         PlaylistPath: "E:\\Hella Gud Christmas Playlist\\christmas.m3u",
@@ -110,6 +110,8 @@ async function readNewLines() {
     }
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
+            /*TF2 has a bug where if you disconnect while using the voice chat the client will think it's still speaking
+                        fixing this using +voicerecord;-voicerecord when joining*/
             sendTF2Command("+voicerecord;-voicerecord");
         }
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
@@ -226,9 +228,15 @@ async function checkMetaData(responsePromise) {
     let fileName = "";
     for (const cat of jObj.root.information.category) {
         if (cat["@_name"] === "meta") {
-            metaInfo = cat.info;
+            if ('info' in cat) {
+                metaInfo = cat.info;
+            } else {
+                //VLC will sometimes return a category with meta as its name but no info in it when songs are switching.
+                return true;
+            }
         }
     }
+
     for (const info of metaInfo) {
         switch (info["@_name"]) {
             case "artist":
@@ -242,6 +250,7 @@ async function checkMetaData(responsePromise) {
                 break;
         }
     }
+
     let tempString;
     const incompleteMeta = artistName === "" || titleName === "";
     if (incompleteMeta) {
