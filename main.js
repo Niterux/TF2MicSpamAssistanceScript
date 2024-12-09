@@ -91,7 +91,7 @@ async function readStreamAsText(stream, format) {
 }
 
 async function readNewLines() {
-    const conLogFileHandle = await Deno.open(config.TF2.ConLogPath, {read: true});
+    const conLogFileHandle = Deno.openSync(config.TF2.ConLogPath, {read: true});
     await conLogFileHandle.seek(fileSize, Deno.SeekMode.Start);
     const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
@@ -195,7 +195,8 @@ async function RCONSuccess() {
         alias VLCNEXT "echo ${VLCNextWord}"
         voice_loopback 1
         ds_enable 2
-        con_timestamp 0`);
+        con_timestamp 0
+        voice_buffer_ms 200`);
     clearInterval(authRetry);
     await sendVLCCommand("pl_forcepause");
     await readNewLines();
@@ -275,9 +276,9 @@ fix this using Mp3tag or similar.`,);
 
 function announceSong(timestamp) {
     if (!timestamp) {
-        RCONClient.execute(formatChatMessage(`Now Playing: ${chatString}.`));
+        RCONClient.execute("say_team" + formatChatMessage(`♪ Now Playing: ${chatString} ♪`));
     } else {
-        RCONClient.execute(formatChatMessage(`Currently Playing: ${chatString}. Currently at ${timestampString}.`,));
+        RCONClient.execute("say_team" + formatChatMessage(`♪ Currently Playing: ${chatString}. Currently at ${timestampString} ♪`,));
     }
 }
 
@@ -303,7 +304,7 @@ function formatChatMessage(message) {
         const utf8Cut = encoder.encodeInto(message, fitTextInto);
         message = message.slice(0, utf8Cut.read) + "...";
     }
-    return "say_team " + message;
+    return message;
 }
 
 // I don't know what I'll do with seconds over 59 hours long
