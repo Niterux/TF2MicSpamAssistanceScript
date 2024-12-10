@@ -299,7 +299,7 @@ function formatChatMessage(message) {
         const utf8Cut = encoder.encodeInto(message, fitTextInto);
         message = message.slice(0, utf8Cut.read) + "...";
     }
-    return message;
+    return `"${message}"`;
 }
 
 // I don't know what I'll do with seconds over 59 hours long
