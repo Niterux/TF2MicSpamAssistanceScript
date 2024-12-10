@@ -96,11 +96,6 @@ async function readNewLines() {
     const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
     const lines = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
-    // Wait for a while before checking for new data
-    setTimeout(() => {
-        readNewLines();
-        checkMetaData();
-    }, config.Other.RefreshMilliseconds);
     if (streamData.size === 0) {
         return;
     }
@@ -199,10 +194,10 @@ async function RCONSuccess() {
         voice_buffer_ms 200`);
     clearInterval(authRetry);
     await sendVLCCommand("pl_forcepause");
-    await readNewLines();
+    timer();
 }
 
-async function checkMetaData(responsePromise) {
+async function checkMetaData() {
     const response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`);
     if (!response.ok || response.body === null) {
         return false;
@@ -352,6 +347,14 @@ function recursiveMerge(base, overlay) {
         }
     }
     return newObject;
+}
+
+function timer() {
+    setTimeout(async () => {
+        await readNewLines();
+        await checkMetaData();
+        timer();
+    }, config.Other.RefreshMilliseconds);
 }
 
 loadConfig()
