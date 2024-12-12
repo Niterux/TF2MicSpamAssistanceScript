@@ -41,6 +41,7 @@ let authRetryCounter = 0;
 let TF2Args;
 let VLCArgs;
 let VLCWasPaused = false;
+let isAlltalkEnabled = false;
 
 function loadConfig() {
     let failedRead = false;
@@ -103,6 +104,7 @@ async function readNewLines() {
         firstRead = true;
         return;
     }
+    isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
             /*TF2 has a bug where if you disconnect while using the voice chat the client will think it's still speaking
@@ -111,7 +113,7 @@ async function readNewLines() {
         }
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
                         consecutive echo commands should be on their own line*/
-        if (lines[i].startsWith("(Demo Support) End recording") || lines[i].includes(`${VLCPauseWord} `) || lines[i].startsWith("You have switched to team")) {
+        if (lines[i].startsWith("(Demo Support) End recording") || lines[i].includes(`${VLCPauseWord} `) || (lines[i].startsWith("You have switched to team") && !isAlltalkEnabled)) {
             await sendVLCCommand("pl_forcepause");
             sendTF2Command("-voicerecord");
             VLCWasPaused = true;
@@ -270,10 +272,11 @@ fix this using Mp3tag or similar.`,);
 }
 
 function announceSong(timestamp) {
+    const messageMode = isAlltalkEnabled ? "say" : "say_team"
     if (!timestamp) {
-        RCONClient.execute("say_team" + formatChatMessage(`♪ Now Playing: ${chatString} ♪`));
+        RCONClient.execute(messageMode + formatChatMessage(`♪ Now Playing: ${chatString} ♪`));
     } else {
-        RCONClient.execute("say_team" + formatChatMessage(`♪ Currently Playing: ${chatString}. Currently at ${timestampString} ♪`,));
+        RCONClient.execute(messageMode + formatChatMessage(`♪ Currently Playing: ${chatString}. Currently at ${timestampString} ♪`,));
     }
 }
 
@@ -355,6 +358,28 @@ function timer() {
         await checkMetaData();
         timer();
     }, config.Other.RefreshMilliseconds);
+}
+
+/*
+ Valve provides no clean way to get cvars, furthermore, parts of the output like "def" "min" "max" are in *randomized*
+ positions whenever multithreading is enabled, multithreading can't be disabled instantly so we cannot work around it.
+ therefore, the output of this function is just a guesstimate, as writing a proper tokenizer and parser for the output
+ would probably take me weeks.
+ If you're reading this Valve, please fire whoever decided that console output should be threaded.
+
+ This function will not properly return the cvar value of any cvar with " in its value because of the above.
+ */
+async function getCVAR(cvar) {
+    const response = await RCONClient.execute(`help "${cvar}"`);
+    const beginRegex = new RegExp(`(?<="${cvar}" = ").*?(?=")`)
+    const match = response.match(beginRegex)
+    if (match === null) return null;
+    return match[0]
+}
+
+async function getCVARAsBool(cvar) {
+    const CVARint = parseInt(await getCVAR(cvar));
+    return (CVARint !== 0 && !isNaN(CVARint))
 }
 
 loadConfig()
