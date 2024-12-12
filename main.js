@@ -104,7 +104,7 @@ async function readNewLines() {
         firstRead = true;
         return;
     }
-    isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
+    //isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
             /*TF2 has a bug where if you disconnect while using the voice chat the client will think it's still speaking
