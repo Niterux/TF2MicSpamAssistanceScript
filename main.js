@@ -10,6 +10,7 @@ const parser = new XMLParser({
         return jPath === "root.information.category" || jPath === "root.information.category.info";
     },
 },);
+const VLCCommandQueue = [];
 const TF2Password = generateRandomString();
 const VLCPassword = generateRandomString();
 const VLCPlayWord = generateRandomString();
@@ -60,6 +61,7 @@ function loadConfig() {
     }
     if (!failedRead) {
         config = recursiveMerge(defaultConfig, TOMLObj);
+        config.Other.RefreshMilliseconds = Math.min(config.Other.RefreshMilliseconds, 1000)
     } else {
         config = defaultConfig;
     }
@@ -104,9 +106,9 @@ async function readNewLines() {
         firstRead = true;
         return;
     }
-    //isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
+            isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
             /*TF2 has a bug where if you disconnect while using the voice chat the client will think it's still speaking
                         fixing this using +voicerecord;-voicerecord when joining*/
             sendTF2Command("+voicerecord;-voicerecord");
@@ -114,17 +116,17 @@ async function readNewLines() {
         /*We use includes instead of startsWith because of a bug in the source engine where it doesn't guarantee that
                         consecutive echo commands should be on their own line*/
         if (lines[i].startsWith("(Demo Support) End recording") || lines[i].includes(`${VLCPauseWord} `) || (lines[i].startsWith("You have switched to team") && !isAlltalkEnabled)) {
-            await sendVLCCommand("pl_forcepause");
+            queueVLCCommand("pl_forcepause");
             sendTF2Command("-voicerecord");
             VLCWasPaused = true;
         }
         if (lines[i].includes(`${VLCNextWord} `)) {
-            await sendVLCCommand("pl_next");
+            queueVLCCommand("pl_next");
             sendTF2Command("+voicerecord");
             VLCWasPaused = false;
         }
         if (lines[i].includes(`${VLCPlayWord} `)) {
-            await sendVLCCommand("pl_forceresume");
+            queueVLCCommand("pl_forceresume");
             sendTF2Command("+voicerecord");
             VLCWasPaused = false;
         }
@@ -195,12 +197,23 @@ async function RCONSuccess() {
         con_timestamp 0
         voice_buffer_ms 200`);
     clearInterval(authRetry);
-    await sendVLCCommand("pl_forcepause");
+    queueVLCCommand("pl_forcepause");
     timer();
 }
 
 async function checkMetaData() {
-    const response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml`);
+    let nextCommand = ""
+    if (VLCCommandQueue.length > 0) {
+        nextCommand = `?command=${VLCCommandQueue[0]}`
+    }
+    let response;
+    try {
+        response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml${nextCommand}`);
+    } catch (e) {
+        return false;
+    } finally {
+        VLCCommandQueue.shift();
+    }
     if (!response.ok || response.body === null) {
         return false;
     }
@@ -280,8 +293,11 @@ function announceSong(timestamp) {
     }
 }
 
-function sendVLCCommand(command) {
-    return fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml?command=${command}`, {method: "HEAD"},);
+function queueVLCCommand(command) {
+    VLCCommandQueue.push(command);
+    if (VLCCommandQueue.length > 5) {
+        VLCCommandQueue.shift();
+    }
 }
 
 function sendTF2Command(command) {

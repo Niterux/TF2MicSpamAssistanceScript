@@ -27,4 +27,5 @@ PlaylistPath = 'E:\Hella Gud Christmas Playlist\christmas.m3u'
 VLCPort = 9090
 [Other]
 # Milliseconds between checking console.log and VLC Media Player's status, recommended values range from 100 to 1000
-RefreshMilliseconds = 400
+# Values above 1000 will be clamped to prevent issues with communicating to VLC
+RefreshMilliseconds = 200
