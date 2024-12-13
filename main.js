@@ -99,6 +99,11 @@ async function readNewLines() {
     const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
     const lines = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
+    getCVARAsBool("sv_alltalk").then((isAlltalk) => {
+        isAlltalkEnabled = isAlltalk;
+    }).catch(() => {
+        isAlltalkEnabled = false;
+    });
     if (streamData.size === 0) {
         return;
     }
@@ -108,7 +113,6 @@ async function readNewLines() {
     }
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("(Demo Support) Start recording demos",)) {
-            isAlltalkEnabled = await getCVARAsBool("sv_alltalk");
             /*TF2 has a bug where if you disconnect while using the voice chat the client will think it's still speaking
                         fixing this using +voicerecord;-voicerecord when joining*/
             sendTF2Command("+voicerecord;-voicerecord");
@@ -210,7 +214,12 @@ async function checkMetaData() {
     try {
         response = await fetch(`http://:${VLCPassword}@127.0.0.1:${config.VLC.VLCPort}/requests/status.xml${nextCommand}`);
     } catch (e) {
-        return false;
+        // Occurs when it's been too long since the last fetch... ???
+        if (e.message.includes("An existing connection was forcibly closed by the remote host.")) {
+            return false;
+        } else {
+            throw e;
+        }
     } finally {
         VLCCommandQueue.shift();
     }

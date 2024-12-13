@@ -28,4 +28,4 @@ VLCPort = 9090
 [Other]
 # Milliseconds between checking console.log and VLC Media Player's status, recommended values range from 100 to 1000
 # Values above 1000 will be clamped to prevent issues with communicating to VLC
-RefreshMilliseconds = 200
+RefreshMilliseconds = 400
