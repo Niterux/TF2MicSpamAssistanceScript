@@ -22,7 +22,7 @@ TF2LaunchArguments = '''
 # Path to VLC Media Player
 VLCPath = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # Path to your Christmas playlist
-PlaylistPath = 'E:\Hella Gud Christmas Playlist\christmas.m3u'
+PlaylistPath = 'E:\Hella Gud Christmas Playlist\christmas.m3u8'
 # Port for VLC to start its web server on
 VLCPort = 9090
 [Other]

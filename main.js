@@ -94,13 +94,15 @@ async function readStreamAsText(stream, format) {
 }
 
 async function readNewLines() {
-    const conLogFileHandle = Deno.openSync(config.TF2.ConLogPath, {read: true});
+    const conLogFileHandle = await Deno.open(config.TF2.ConLogPath, {read: true});
     await conLogFileHandle.seek(fileSize, Deno.SeekMode.Start);
     const streamData = await readStreamAsText(conLogFileHandle.readable, "utf-8");
     fileSize += streamData.size;
     const lines = streamData.text.split(config.TF2.LinuxLineEndings ? "\n" : "\r\n");
     getCVARAsBool("sv_alltalk").then((isAlltalk) => {
-        isAlltalkEnabled = isAlltalk;
+        if (isAlltalk !== null) {
+            isAlltalkEnabled = isAlltalk;
+        }
     }).catch(() => {
         isAlltalkEnabled = false;
     });
@@ -404,7 +406,8 @@ async function getCVAR(cvar) {
 
 async function getCVARAsBool(cvar) {
     const CVARint = parseInt(await getCVAR(cvar));
-    return (CVARint !== 0 && !isNaN(CVARint))
+    if (isNaN(CVARint)) return null;
+    return (CVARint !== 0)
 }
 
 loadConfig()
